@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map - Display a map</title>
+<style type="text/css">
+    html,
+    body {
+        margin: 0px;
+        height: 100%;
+        width: 100%
+    }
+
+    .container {
+        width: 100%;
+        height: 100%
+    }
+
+    .message {
+        background-color: black;
+        color: white;
+    }
+
+    .tiptemplate {
+        display: none;
+    }
+
+    .tip-content {
+        background: #fff;
+        width: 200px;
+        padding: 10px;
+        border: 1px solid #d1c9c9;
+        border-radius: 4px;
+    }
+</style>
+<link rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+<script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.min.js"></script>
+<script src="https://unpkg.com/maptalks.snap/dist/maptalks.snap.js"></script>
+<script type="text/javascript" src="https://unpkg.com/gcoord@0.3.2/dist/gcoord.js"></script>
+
+<body>
+    <div class="message">
+        draw tempGeometry snap
+    </div>
+    <div id="tiptemplate" class="tiptemplate">
+        <div class="tip-content">
+            click me to draw vertex
+        </div>
+    </div>
+    <div id="map" class="container"></div>
+    <script src="./base.js"></script>
+    <script>
+        let editGeo;
+        fetch('./data.geojson').then(res => res.json()).then(geojson => {
+            const geos = maptalks.GeoJSON.toGeometry(geojson, function (geo) {
+                if (geo instanceof maptalks.Marker || geo instanceof maptalks.MultiPoint) {
+                    geo.setSymbol(markerSymbol);
+                }
+                if (geo instanceof maptalks.LineString || geo instanceof maptalks.MultiLineString) {
+                    geo.setSymbol(lineSymbol);
+                }
+                if (geo instanceof maptalks.Polygon || geo instanceof maptalks.MultiPolygon) {
+                    geo.setSymbol(fillSymbol);
+                }
+            });
+            layer.addGeometry(geos);
+        });
+
+        const layer1 = new maptalks.VectorLayer('layer1').addTo(map);
+
+        map.on('mousemove', showDrawTip);
+
+       //custom filterGeometries
+        snap.config({
+            filterGeometries: () => {
+                return layer.getGeometries().concat(layer1.getGeometries()).filter(g => {
+                    return g !== tipPoint;
+                })
+            }
+        })
+
+        let tipPoint, tipUIMarker;
+        function showDrawTip(e) {
+            if (!drawTool.isEnabled()) {
+                return;
+            }
+            if (!tipPoint) {
+                tipPoint = new maptalks.Marker(e.coordinate, {
+                    symbol: {
+                        ...markerSymbol,
+                    }
+                });
+                tipPoint.addTo(layer1);
+                snap.effectGeometry(tipPoint);
+                tipUIMarker = new maptalks.ui.UIMarker(e.coordinate, {
+                    content: document.querySelector('#tiptemplate').innerHTML,
+                    verticalAlignment: 'bottom',
+                    dy: 10
+                }).addTo(map);
+            }
+            if (tipPoint.snapTo) {
+                const containerPoint = tipPoint.snapTo(e.containerPoint);
+                const coordinate = map.containerPointToCoord(containerPoint);
+                tipPoint.setCoordinates(coordinate);
+                tipUIMarker.setCoordinates(coordinate);
+            }
+        }
+
+        function closeShowTip() {
+            if (tipPoint) {
+                tipPoint.remove();
+                snap.unEffectGeometry(tipPoint);
+                tipUIMarker.remove();
+                tipPoint = null;
+            }
+        }
+
+        var drawTool = new maptalks.DrawTool({
+            once: true,
+            mode: 'LineString',
+            // 'symbol': drawSymbol,
+        }).addTo(map).disable();
+
+        drawTool.on('disable', () => {
+            closeShowTip();
+        });
+
+        drawTool.on('drawend', function (param) {
+            // console.log(param.geometry);
+            layer1.addGeometry(param.geometry);
+            closeShowTip();
+        });
+        drawTool.on('drawstart', function (param) {
+            console.log('reset geometry');
+
+            const geometry = param.tempGeometry;
+            // console.log(geometry);
+            const mode = drawTool.getMode();
+            if (mode === 'linestring') {
+                geometry.setSymbol({
+                    lineColor: 'red',
+                    markerType: 'ellipse',
+                    markerWidth: 10,
+                    markerHeight: 10,
+                    'markerPlacement': 'vertex',
+                })
+            }
+            if (mode === 'polygon') {
+                geometry.setSymbol({
+                    polygonFill: "white",
+                    lineColor: 'blue',
+                    markerType: 'ellipse',
+                    markerWidth: 10,
+                    markerHeight: 10,
+                    markerFill: "red",
+                    'markerPlacement': 'vertex',
+                })
+            }
+            if (mode === 'point') {
+                geometry.setSymbol({
+                    markerFile: './poi.png'
+                    // polygonFill: "white",
+                    // lineColor: 'blue',
+                    // markerType: 'ellipse',
+                    // markerWidth: 10,
+                    // markerHeight: 10,
+                    // markerFill: "red",
+                    // 'markerPlacement': 'vertex',
+                })
+            }
+            snap.effectGeometry(param.tempGeometry);
+
+        });
+
+        var items = ['LineString', 'Polygon', 'Point'].map(function (value) {
+            return {
+                item: value,
+                click: function () {
+                    drawTool.setMode(value).enable();
+                }
+            };
+        });
+
+        var toolbar = new maptalks.control.Toolbar({
+            items: [
+                {
+                    item: 'Shape',
+                    children: items
+                },
+                {
+                    item: 'Disable',
+                    click: function () {
+                        drawTool.disable();
+                    }
+                },
+                {
+                    item: 'Clear',
+                    click: function () {
+                        layer1.clear();
+                    }
+                }
+            ]
+        }).addTo(map);
+
+
+
+
+    </script>
+</body>
+
+</html>
