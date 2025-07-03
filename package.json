@@ -18,15 +18,16 @@
     "dist"
   ],
   "scripts": {
-    "build": "rslib build",
-    "dev": "rslib build -w",
+    "build": "cross-env NODE_ENV='prd' rslib build",
+    "dev": "cross-env NODE_ENV='dev' rslib build -w",
     "lint": "eslint ./*.js"
   },
   "devDependencies": {
     "@rslib/core": "^0.10.4",
+    "@types/node": "^24.0.10",
     "cross-env": "^7.0.3"
   },
   "peerDependencies": {
-    "maptalks": "^1.1.3"
+    "maptalks": "^1.0.0"
   }
 }

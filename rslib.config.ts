@@ -1,51 +1,37 @@
 import { defineConfig } from '@rslib/core'
+import pkg from './package.json'
 
-// maptalks.snap
+const product = process.env.NODE_ENV === 'prd';
+const FILEMANE = pkg.name;
+const sourceMap = !product;
+const banner = `/*!\n * ${pkg.name} v${pkg.version}\n  */`;
 
 export default defineConfig({
     lib: [
         {
             format: "esm",
-            output: {
-                filename: {
-                    js: "maptalks.snap.es.js"
-                }
-            }
-        },
-        {
-            format: "umd",
-            output: {
-                filename: {
-                    js: "maptalks.snap.umd.min.js"
-                },
-                externals: {
-                    'maptalks': "window maptalks"
-                },
-                minify: {
-                    js: true
-                },
-                legalComments: "none",
+            banner: {
+                js: banner
             },
-            tools: {
-                rspack: {
-                    output: {
-                        library: {
-                            name: "maptalks",
-                            type: "assign-properties"
-                        }
-                    },
+            output: {
+                filename: {
+                    js: `${FILEMANE}.es.js`
                 }
             }
         },
         {
             format: "umd",
+            banner: {
+                js: banner
+            },
             output: {
                 filename: {
-                    js: "maptalks.snap.umd.js"
+                    js: `${FILEMANE}.umd.js`
                 },
                 externals: {
                     'maptalks': "window maptalks"
                 },
+                sourceMap: sourceMap,
                 legalComments: "none",
             },
             tools: {
