@@ -17,7 +17,8 @@ export default defineConfig({
                 filename: {
                     js: `${FILEMANE}.es.js`
                 }
-            }
+            },
+            dts: true
         },
         {
             format: "umd",

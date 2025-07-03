@@ -9,7 +9,7 @@ const options = {
 
 const TEMP_POINT = new maptalks.Point(0, 0);
 
-function coordinateToContainerPoint(coordinate, map, out) {
+function coordinateToContainerPoint(coordinate, map, out?) {
     return map.coordToContainerPoint(coordinate, null, out);
 }
 
@@ -118,6 +118,9 @@ function pointOnRing(ring, point) {
 }
 
 export class Snap extends maptalks.Eventable(maptalks.Class) {
+    map
+    _mousePoint
+    _geometries
     constructor(map, options) {
         super(options);
         this.map = map;
@@ -132,7 +135,7 @@ export class Snap extends maptalks.Eventable(maptalks.Class) {
     }
 
     _validateMousePosition(point) {
-        return (this._mousePoint && this._mousePoint.distanceTo(point) <= this.options.tolerance + 5);
+        return (this._mousePoint && this._mousePoint.distanceTo(point) <= this.options!.tolerance + 5);
     }
 
     effectGeometry(geometry) {
@@ -142,16 +145,17 @@ export class Snap extends maptalks.Eventable(maptalks.Class) {
         this._geometries.push(geometry);
         const self = this;
 
-        const snapTo = function (handleConatainerPoint, lastContainerPoints) {
+        const snapTo = (handleConatainerPoint, lastContainerPoints) => {
             if (!handleConatainerPoint) {
                 return;
             }
             let geometries;
-            const filterGeometries = self.options.filterGeometries || self.options.fiterGeometries;
+            const filterGeometries = self.options!.filterGeometries || self.options!.fiterGeometries;
             if (filterGeometries && maptalks.Util.isFunction(filterGeometries)) {
                 geometries = filterGeometries();
             }
             if (!geometries || !geometries.length) {
+                // @ts-ignore
                 const layer = this.getLayer();
                 if (layer) {
                     geometries = layer.getGeometries();
@@ -257,7 +261,7 @@ export class Snap extends maptalks.Eventable(maptalks.Class) {
             }
             return;
         }
-        const tolerance = Math.max(this.options.tolerance, 1);
+        const tolerance = Math.max(this.options!.tolerance, 1);
         const coordinates = geometry.getCoordinates();
         const map = this.map;
         const isNearest = (point) => {
@@ -278,6 +282,7 @@ export class Snap extends maptalks.Eventable(maptalks.Class) {
             }
             const bbox = ringBBOX(ring, map, tolerance);
             const x = handleConatainerPoint.x, y = handleConatainerPoint.y;
+            // @ts-ignore
             if (x < bbox.xmin || y < bbox.ymin || x > bbox.xmax || y > bbox.ymax) {
                 return;
             }
@@ -312,7 +317,7 @@ export class Snap extends maptalks.Eventable(maptalks.Class) {
             }
         };
         // 获取环上在当前点击的点和前一个点之间的所有节点
-        const getEffectedVertexOnRing = (ring, oldPoints, newPoint, isRing) => {
+        const getEffectedVertexOnRing = (ring, oldPoints, newPoint, isRing?) => {
             const [oldPoint, beforeOldPoint] = oldPoints;
             // 这里已经通过 nearestRing 校验过了环坐标的正确性，不需要再校验一次
             const ringPoints = ring.map(point => coordinateToContainerPoint(point, map));
